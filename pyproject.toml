@@ -1,0 +1,11 @@
+[project]
+name = "encoderfinetuning"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "git-filter-repo>=2.47.0",
+    "mlx-raclate>=0.1.0b1",
+    "scikit-learn>=1.9.0",
+]

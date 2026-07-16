@@ -8,10 +8,16 @@ Fine-tune ModernBERT-large on Apple Silicon for sequence classification (text cl
 
 ```bash
 # With uv (recommended)
-uv add mlx-raclate scikit-learn seqeval
+uv add mlx-trainer
 
 # With pip
-pip install mlx-raclate scikit-learn seqeval
+pip install mlx-trainer
+```
+
+Or install from source:
+
+```bash
+uv sync
 ```
 
 Requires macOS with Apple Silicon (M1/M2/M3/M4).

@@ -1,6 +1,6 @@
 """Smoke test: fp16 load + fp16 training on tiny ModernBERT token classification."""
-import sys
-sys.path.insert(0, ".")
+import os
+os.environ["HF_HUB_OFFLINE"] = "1"
 
 import mlx.core as mx
 from mlx.utils import tree_flatten

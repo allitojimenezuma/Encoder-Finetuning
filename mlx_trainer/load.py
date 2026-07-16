@@ -13,6 +13,7 @@ from huggingface_hub import snapshot_download
 
 from .modernbert_config import ModelArgs
 from .modernbert_model import ModelForSequenceClassification
+from .token_classification_model import ModelForTokenClassification
 from .tokenizer_utils import load_tokenizer
 
 
@@ -97,4 +98,64 @@ def load(
 
     tokenizer = load_tokenizer(model_path, tokenizer_config or {})
     print(f"[load] {repo_id} @ {dtype}")
+    return model, tokenizer
+
+
+def load_token_classification(
+    repo_id: str,
+    model_config: Optional[Dict[str, Any]] = None,
+    train: bool = False,
+    dtype: mx.Dtype = mx.float16,
+    tokenizer_config: Optional[Dict[str, Any]] = None,
+    num_labels: int = 2,
+    id2label: Optional[Dict[int, str]] = None,
+) -> Tuple[nn.Module, Any]:
+    """
+    Load ModernBERT for token classification.
+
+    Args:
+        repo_id: HuggingFace repo or local path.
+        model_config: Extra config overrides.
+        train: If True, init missing head weights.
+        dtype: Target dtype (default fp16).
+        tokenizer_config: Extra tokenizer kwargs.
+        num_labels: Number of classification labels.
+        id2label: Mapping from label id to label name.
+
+    Returns:
+        (model, tokenizer) tuple.
+    """
+    model_path = _get_model_path(repo_id)
+
+    with open(model_path / "config.json") as f:
+        config = json.load(f)
+
+    if model_config:
+        config.update(model_config)
+
+    config["num_labels"] = num_labels
+    if id2label is not None:
+        config["id2label"] = {str(k): v for k, v in id2label.items()}
+
+    model_args = ModelArgs.from_dict(config)
+    model = ModelForTokenClassification(model_args)
+    model.set_dtype(dtype)
+
+    # Load + cast weights
+    weights = {}
+    for wf in glob.glob(str(model_path / "model*.safetensors")):
+        weights.update(mx.load(wf))
+    weights = {k: v.astype(dtype) for k, v in weights.items()}
+
+    if hasattr(model, "sanitize"):
+        weights = model.sanitize(weights)
+
+    _init_head_weights(model, weights, model_args, dtype)
+
+    model.load_weights(list(weights.items()))
+    mx.eval(model.parameters())
+    model.eval()
+
+    tokenizer = load_tokenizer(model_path, tokenizer_config or {})
+    print(f"[load] {repo_id} @ {dtype} (token classification, {num_labels} labels)")
     return model, tokenizer

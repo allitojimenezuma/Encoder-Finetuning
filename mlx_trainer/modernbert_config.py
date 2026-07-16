@@ -6,7 +6,7 @@ Replaces mlx_raclate.models.modernbert.ModelArgs.
 
 import inspect
 from dataclasses import dataclass, field
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 
 @dataclass
@@ -71,6 +71,8 @@ class ModelArgs:
     id2label: Optional[Dict[int, str]] = None
     pipeline_config: Optional[Dict[str, Any]] = None
     use_late_interaction: bool = False
+    token_classification: bool = False
+    class_weights: Optional[List[float]] = None
 
     @classmethod
     def from_dict(cls, params: dict) -> "ModelArgs":

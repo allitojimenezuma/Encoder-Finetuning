@@ -1,7 +1,6 @@
 """
 ModernBERT loader — fp16 by default.
-Model classes from mlx_raclate.models.modernbert (pure MLX).
-"""
+Self-contained model classes (pure MLX, no external model deps)."""
 import glob
 import json
 from pathlib import Path
@@ -12,10 +11,8 @@ import mlx.nn as nn
 from mlx.utils import tree_flatten
 from huggingface_hub import snapshot_download
 
-from mlx_raclate.models.modernbert import (
-    ModelForSequenceClassification,
-    ModelArgs,
-)
+from .modernbert_config import ModelArgs
+from .modernbert_model import ModelForSequenceClassification
 from .tokenizer_utils import load_tokenizer
 
 

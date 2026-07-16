@@ -116,13 +116,13 @@ trainer.train()
 Train a prompt injection guardrail:
 
 ```bash
-python mlx_trainer/train.py
+python examples/sequence_classification/train.py
 ```
 
 Run inference on a trained guardrail:
 
 ```bash
-python mlx_trainer/inference.py
+python examples/sequence_classification/inference.py
 ```
 
 ### Token Classification (PII Detection)

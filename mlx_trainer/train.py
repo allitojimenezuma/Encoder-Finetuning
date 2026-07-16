@@ -4,6 +4,7 @@ Uses mlx_trainer implementation.
 """
 import os
 os.environ["HF_TOKEN"] = "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"
+os.environ["HF_HUB_OFFLINE"] = "1"
 
 import pandas as pd
 from datasets import Dataset, load_dataset

@@ -8,6 +8,19 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Training artifacts
 trained_models/*
+outputs/*
+*.log
+*.csv
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+
+# Project-specific
 .pi*
-output*

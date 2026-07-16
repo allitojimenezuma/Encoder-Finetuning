@@ -1,13 +1,16 @@
 """
-🛡️ ModernBERT PII Detection — Inference Script
+ModernBERT PII Detection — Inference Script
 
 Detects PII entities (names, emails, phones, etc.) in text using
 a fine-tuned token classification model with BIO labeling.
+
+Usage:
+    python examples/pii/inference_pii.py --text "My name is Alice and my email is alice@example.com"
+    python examples/pii/inference_pii.py --file input.txt
+    python examples/pii/inference_pii.py --json-input data.json --model outputs/modernbert_pii/checkpoint-3941
 """
 import argparse
 import json
-import sys
-from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import mlx.core as mx
@@ -130,28 +133,21 @@ def format_highlighted_text(
     if not entities:
         return text
 
-    # Simple approach: just highlight entity text occurrences
-    result = text
-    # Process entities in reverse order of appearance to maintain offsets
     sorted_entities = sorted(entities, key=lambda e: e["start_token"])
 
-    # For character-level highlighting, search in original text
     highlighted_parts = []
     last_end = 0
 
-    # Sort entities by their position in the original text
+    # Find character-level positions
     char_entities = _find_char_positions(text, sorted_entities)
 
-    for ent in char_entities:
-        start, end, label, conf = ent
+    for start, end, label, conf in char_entities:
         if start < last_end:
-            continue  # Skip overlapping
+            continue
 
-        # Add text before entity
         highlighted_parts.append(text[last_end:start])
-
-        # Add highlighted entity
         entity_text = text[start:end]
+
         if use_color:
             color = ENTITY_COLORS.get(label, "\033[97m")
             highlighted_parts.append(
@@ -162,7 +158,6 @@ def format_highlighted_text(
 
         last_end = end
 
-    # Add remaining text
     highlighted_parts.append(text[last_end:])
     return "".join(highlighted_parts)
 
@@ -171,26 +166,19 @@ def _find_char_positions(
     text: str,
     entities: List[Dict],
 ) -> List[Tuple[int, int, str, float]]:
-    """Find character-level positions of entities in original text.
-
-    Uses subword token matching to approximate positions.
-    Returns list of (start_char, end_char, label, confidence).
-    """
+    """Find character-level positions of entities in original text."""
     result = []
     for ent in entities:
         entity_text = ent["text"]
-        # Find first occurrence of the entity text in the original text
         idx = text.find(entity_text)
         if idx >= 0:
             result.append((idx, idx + len(entity_text), ent["label"], ent["confidence"]))
         else:
-            # Try without special tokens (e.g., ▁ prefix from SentencePiece)
             clean = entity_text.replace("▁", "").strip()
             if clean:
                 idx = text.find(clean)
                 if idx >= 0:
                     result.append((idx, idx + len(clean), ent["label"], ent["confidence"]))
-
     return result
 
 
@@ -205,7 +193,6 @@ def run_inference(
 
     Returns (entities, highlighted_text).
     """
-    # Tokenize
     inputs = tokenizer._tokenizer(
         text,
         return_tensors="np",
@@ -216,31 +203,23 @@ def run_inference(
     input_ids = mx.array(inputs["input_ids"])
     attention_mask = mx.array(inputs["attention_mask"])
 
-    # Inference
     outputs = model(
         input_ids=input_ids,
         attention_mask=attention_mask,
     )
 
-    probabilities = outputs["probabilities"]  # (1, seq_len, num_labels)
+    probabilities = outputs["probabilities"]
     pred_ids = mx.argmax(probabilities, axis=-1).tolist()[0]
     probs = probabilities.tolist()[0]
 
-    # Get confidences for predicted classes
     confidences = [probs[i][pred_ids[i]] for i in range(len(pred_ids))]
 
-    # Get tokens (handle both tokenizer APIs)
     try:
-        tokens = tokenizer._tokenizer.convert_ids_to_tokens(
-            inputs["input_ids"][0]
-        )
+        tokens = tokenizer._tokenizer.convert_ids_to_tokens(inputs["input_ids"][0])
     except AttributeError:
         tokens = [str(t) for t in inputs["input_ids"][0]]
 
-    # Extract entity spans
     entities = extract_entities(tokens, pred_ids, confidences, threshold)
-
-    # Format highlighted output
     highlighted = format_highlighted_text(text, entities)
 
     return entities, highlighted
@@ -258,11 +237,9 @@ def print_results(text: str, entities: List[Dict], highlighted: str):
         print("=" * 70)
         return
 
-    # Highlighted text
     print(f"\n  {BOLD}Text with PII:{RESET}")
     print(f"  {highlighted}")
 
-    # Entity details table
     print(f"\n  {BOLD}Detected Entities:{RESET}")
     print(f"  {'Label':<16} {'Confidence':>10}  {'Text'}")
     print(f"  {'-'*16} {'-'*10}  {'-'*30}")
@@ -279,48 +256,30 @@ def parse_args():
         description="PII Detection Inference — ModernBERT Token Classification"
     )
 
-    # Model
     p.add_argument(
         "--model", type=str,
-        default="trained_models/outputs/modernbert_pii",
+        default="outputs/modernbert_pii",
         help="Path to trained model checkpoint or HuggingFace repo",
     )
 
-    # Input
     input_group = p.add_mutually_exclusive_group(required=True)
-    input_group.add_argument(
-        "--text", type=str,
-        help="Input text to analyze",
-    )
-    input_group.add_argument(
-        "--file", type=str,
-        help="Path to text file to analyze",
-    )
-    input_group.add_argument(
-        "--json-input", type=str,
-        help="JSON file with 'texts' key (list of strings)",
-    )
+    input_group.add_argument("--text", type=str, help="Input text to analyze")
+    input_group.add_argument("--file", type=str, help="Path to text file to analyze")
+    input_group.add_argument("--json-input", type=str,
+                             help="JSON file with 'texts' key (list of strings)")
 
-    # Inference params
-    p.add_argument(
-        "--threshold", type=float, default=0.5,
-        help="Minimum confidence threshold for entity extraction (default: 0.5)",
-    )
-    p.add_argument(
-        "--max-length", type=int, default=512,
-        help="Max token length (default: 512)",
-    )
-    p.add_argument(
-        "--no-color", action="store_true",
-        help="Disable colored terminal output",
-    )
+    p.add_argument("--threshold", type=float, default=0.5,
+                    help="Minimum confidence threshold for entity extraction")
+    p.add_argument("--max-length", type=int, default=512,
+                    help="Max token length")
+    p.add_argument("--no-color", action="store_true",
+                    help="Disable colored terminal output")
 
     return p.parse_args()
 
 
 def main():
     args = parse_args()
-
     num_labels = len(LABELS)
 
     print("=" * 70)

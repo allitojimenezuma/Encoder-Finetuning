@@ -1,24 +1,26 @@
 """
-🛡️ ModernBERT PII Detection — Fine-Tuning Script
+ModernBERT PII Detection — Fine-Tuning Script
 
-End-to-end pipeline for token-level PII detection using BIO labeling.
-Trains ModernBERT-large with weighted cross-entropy and entity-level eval.
+Trains ModernBERT for token-level PII detection using BIO labeling.
+Uses mlx_trainer library directly (pure MLX, no external deps).
+
+Usage:
+    python examples/pii/train_pii.py
+    python examples/pii/train_pii.py --epochs 5 --lr 5e-5
+    python examples/pii/train_pii.py --dataset ai4privacy/pii-masking-openpii-1m
 """
 import argparse
 import os
+from collections import Counter
 
 import pandas as pd
 from datasets import Dataset, load_dataset
 from sklearn.model_selection import train_test_split
 
-# Parche para evitar el error de importación en la generación de model cards
-try:
-    import mlx_raclate.tuner.model_card_utils as model_card_utils
-    model_card_utils.get_inference_code = lambda *args, **kwargs: "# Snippet omitido\n"
-except ImportError:
-    pass
+from mlx_trainer.args import TrainingArgs
+from mlx_trainer.load import load_token_classification
+from mlx_trainer.token_classification_trainer import TokenClassificationTrainer
 
-os.environ.setdefault("HF_TOKEN", "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")
 
 # ── Label schema ───────────────────────────────────────────────────
 LABELS = [
@@ -43,27 +45,21 @@ id2label = {i: l for i, l in enumerate(LABELS)}
 def load_pii_dataset(dataset_name: str, seed: int = 3407, test_size: float = 0.15):
     """Load a PII dataset and parse BIO labels.
 
-    Supports datasets that expose:
-      - `tokens` + `tags` (integer label ids), or
-      - `tokens` + `labels` (BIO string labels), or
-      - `text` + `bio_tags` (string-level BIO tags).
-
-    Returns (train_dataset, eval_dataset) as HuggingFace Datasets with
-    `tokens` (List[str]) + `labels` (List[str]) columns ready for
-    TokenClassificationCollator.
+    Supports datasets with:
+      - `tokens` + `tags` (integer labels)
+      - `tokens` + `labels` (string labels)
+      - `text` + `bio_tags` (string-level BIO tags)
+      - `tokens` + `ner_tags` (CoNLL-style)
     """
     print(f"\n[1/4] Loading PII dataset: {dataset_name}...")
 
     ds = load_dataset(dataset_name, split="train")
-
-    # Inspect columns to determine format
     cols = set(ds.column_names)
     print(f"  Columns: {sorted(cols)}")
 
     rows = []
 
     if "tokens" in cols and "tags" in cols:
-        # Format: tokens (List[str]), tags (List[int]) — needs label mapping
         print("  -> Detected tokens+tags format (integer labels)")
         for example in ds:
             tokens = example["tokens"]
@@ -72,21 +68,17 @@ def load_pii_dataset(dataset_name: str, seed: int = 3407, test_size: float = 0.1
             rows.append({"tokens": tokens, "labels": labels})
 
     elif "tokens" in cols and "labels" in cols:
-        # Format: tokens (List[str]), labels (List[str]) — already BIO strings
         print("  -> Detected tokens+labels format (string labels)")
         for example in ds:
             rows.append({"tokens": example["tokens"], "labels": example["labels"]})
 
     elif "text" in cols and "bio_tags" in cols:
-        # Format: raw text + pre-computed BIO tags
         print("  -> Detected text+bio_tags format")
         for example in ds:
             rows.append({"text": example["text"], "bio_tags": example["bio_tags"]})
 
     elif "tokens" in cols and "ner_tags" in cols:
-        # Common HuggingFace NER format (CoNLL-style)
-        print("  -> Detected tokens+ner_tags format")
-        # Try to recover label names from dataset features
+        print("  -> Detected tokens+ner_tags format (CoNLL-style)")
         label_names = None
         if hasattr(ds.features.get("ner_tags", None), "feature") and hasattr(
             ds.features["ner_tags"].feature, "names"
@@ -102,10 +94,7 @@ def load_pii_dataset(dataset_name: str, seed: int = 3407, test_size: float = 0.1
             rows.append({"tokens": tokens, "labels": labels})
 
     else:
-        print(f"  ⚠ Unsupported column set: {cols}")
-        print("  Falling back to text-based format — expecting 'text' column")
-        for example in ds:
-            rows.append({"text": example["text"], "bio_tags": ["O"]})
+        raise ValueError(f"Unsupported column set: {cols}. Expected tokens+tags, tokens+labels, text+bio_tags, or tokens+ner_tags.")
 
     df = pd.DataFrame(rows)
     print(f"  -> Total samples: {len(df)}")
@@ -113,7 +102,6 @@ def load_pii_dataset(dataset_name: str, seed: int = 3407, test_size: float = 0.1
     # Show label distribution
     if "labels" in df.columns:
         all_labels = [l for sublist in df["labels"] for l in sublist]
-        from collections import Counter
         dist = Counter(all_labels)
         for label_name in LABELS:
             count = dist.get(label_name, 0)
@@ -177,10 +165,6 @@ def parse_args():
 def main():
     args = parse_args()
 
-    from mlx_trainer.load import load_token_classification
-    from mlx_trainer.args import TrainingArgs
-    from mlx_trainer.token_classification_trainer import TokenClassificationTrainer
-
     print("=" * 70)
     print("Fine-Tuning ModernBERT-large — PII Detection (Token Classification)")
     print("=" * 70)
@@ -199,13 +183,8 @@ def main():
     num_labels = len(LABELS)
     print(f"\n[2/4] Loading model: {args.model} ({num_labels} labels)...")
 
-    model_config = {}
-    if args.resume:
-        model_config["resume_from_checkpoint"] = args.resume
-
     model, tokenizer = load_token_classification(
         args.model,
-        model_config=model_config if model_config else None,
         train=True,
         num_labels=num_labels,
         id2label=id2label,

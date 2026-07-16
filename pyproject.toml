@@ -8,4 +8,5 @@ dependencies = [
     "git-filter-repo>=2.47.0",
     "mlx-raclate>=0.1.0b1",
     "scikit-learn>=1.9.0",
+    "seqeval>=1.2.0",
 ]

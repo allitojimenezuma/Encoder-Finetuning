@@ -186,7 +186,13 @@ class Trainer:
         if shuffle:
             dataset = dataset.shuffle(seed=seed)
         for i in range(0, len(dataset), batch_size):
-            yield dataset[i : min(i + batch_size, len(dataset))]
+            batch = dataset[i : min(i + batch_size, len(dataset))]
+            # HF Dataset slice returns column-oriented dict; convert to row-oriented list
+            if isinstance(batch, dict) and batch and isinstance(next(iter(batch.values())), list):
+                keys = list(batch.keys())
+                n = len(batch[keys[0]])
+                batch = [{k: batch[k][j] for k in keys} for j in range(n)]
+            yield batch
 
     def train(self):
         print("Starting training...\n")

@@ -1,5 +1,5 @@
 [project]
-name = "mlx-trainer"
+name = "mlx-modernbert"
 version = "0.1.0"
 description = "Pure MLX training framework for ModernBERT — no PyTorch, no TensorFlow. Just Metal."
 readme = "README.md"
@@ -7,6 +7,15 @@ license = "MIT"
 requires-python = ">=3.13"
 authors = [
     { name = "Alvaro Jimenez Martinez" },
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dependencies = [
     "mlx>=0.24.0",
@@ -18,7 +27,13 @@ dependencies = [
     "scikit-learn>=1.3.0",
     "pandas>=2.0.0",
     "seqeval>=1.2.0",
+    "twine>=6.2.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/allitojimenezuma/Encoder-Finetuning"
+Repository = "https://github.com/allitojimenezuma/Encoder-Finetuning"
+Issues = "https://github.com/allitojimenezuma/Encoder-Finetuning/issues"
 
 [build-system]
 requires = ["hatchling"]

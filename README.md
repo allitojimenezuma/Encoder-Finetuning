@@ -1,4 +1,4 @@
-# mlx_trainer
+# mlx-modernbert
 
 Pure MLX training framework for ModernBERT. No PyTorch. No TensorFlow. Just Metal.
 
@@ -8,10 +8,10 @@ Fine-tune ModernBERT-large on Apple Silicon for sequence classification (text cl
 
 ```bash
 # With uv (recommended)
-uv add mlx-trainer
+uv add mlx-modernbert
 
 # With pip
-pip install mlx-trainer
+pip install mlx-modernbert
 ```
 
 Or install from source:

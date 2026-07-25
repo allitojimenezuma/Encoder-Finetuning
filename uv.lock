@@ -758,25 +758,7 @@ wheels = [
 ]
 
 [[package]]
-name = "mlx-raclate"
-version = "0.1.0b1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "datasets" },
-    { name = "fastapi" },
-    { name = "huggingface-hub" },
-    { name = "jinja2" },
-    { name = "mlx" },
-    { name = "transformers" },
-    { name = "uvicorn" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/ab/b7/0bf2fa9f40b94077bf5df588eeb1e145c0c0327fb54dab0418fb1677a93e/mlx_raclate-0.1.0b1.tar.gz", hash = "sha256:e583ad508cdd4d8f6ec1733c0b051e4614dca16f303275e5b1dfddf44030c2b7", size = 179944, upload-time = "2026-01-06T23:31:31.78Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/42/2a/7ccf09a29369f8d1726dfa8b6f50cdddcfc4967b78a57ca6750d28dce7d5/mlx_raclate-0.1.0b1-py3-none-any.whl", hash = "sha256:b4d1910d60773342775088f80792df202f8bb852ac2f60464786bfdce6b49d75", size = 82092, upload-time = "2026-01-06T23:31:30.178Z" },
-]
-
-[[package]]
-name = "mlx-trainer"
+name = "mlx-modernbert"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
@@ -804,6 +786,24 @@ requires-dist = [
     { name = "seqeval", specifier = ">=1.2.0" },
     { name = "transformers", specifier = ">=4.40.0" },
     { name = "twine", specifier = ">=6.2.0" },
+]
+
+[[package]]
+name = "mlx-raclate"
+version = "0.1.0b1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "datasets" },
+    { name = "fastapi" },
+    { name = "huggingface-hub" },
+    { name = "jinja2" },
+    { name = "mlx" },
+    { name = "transformers" },
+    { name = "uvicorn" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ab/b7/0bf2fa9f40b94077bf5df588eeb1e145c0c0327fb54dab0418fb1677a93e/mlx_raclate-0.1.0b1.tar.gz", hash = "sha256:e583ad508cdd4d8f6ec1733c0b051e4614dca16f303275e5b1dfddf44030c2b7", size = 179944, upload-time = "2026-01-06T23:31:31.78Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/42/2a/7ccf09a29369f8d1726dfa8b6f50cdddcfc4967b78a57ca6750d28dce7d5/mlx_raclate-0.1.0b1-py3-none-any.whl", hash = "sha256:b4d1910d60773342775088f80792df202f8bb852ac2f60464786bfdce6b49d75", size = 82092, upload-time = "2026-01-06T23:31:30.178Z" },
 ]
 
 [[package]]

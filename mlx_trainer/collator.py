@@ -11,7 +11,7 @@ class TextClassificationCollator:
     tokenizer: Any
     max_length: int = 512
 
-    def __call__(self, features: Dict[str, List]) -> Dict[str, mx.array]:
+    def __call__(self, features: Any) -> Dict[str, mx.array]:
         if self.tokenizer.pad_token_id is None:
             # Check if model config defines a pad token
             pad_token = getattr(self.tokenizer, "pad_token", None)
@@ -29,6 +29,10 @@ class TextClassificationCollator:
                         "No pad_token or eos_token available. "
                         "Please set tokenizer.pad_token explicitly."
                     )
+
+        # Row-oriented list → column-oriented dict
+        if isinstance(features, list):
+            features = {k: [f[k] for f in features] for k in features[0]}
 
         batch = self.tokenizer(
             features["text"],
